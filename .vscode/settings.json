@@ -1,3 +1,4 @@
 {
-    "python.disableInstallationCheck": true
+    "python.disableInstallationCheck": true,
+    "python.pythonPath": "/Users/franckess/anaconda3/envs/udacity/bin/python"
 }

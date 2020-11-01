@@ -39,3 +39,11 @@ Below is an outline showing the structure of the course, for your reference.
 **Project: Creating and Optimizing an ML Pipeline**
 In the project at the end of this course, you'll have the opportunity to create and optimize an ML pipeline. You'll do this both using HyperDrive and also Automated ML, so that you can compare the results of the two methods.
 
+# Work environment
+
+* Clone this repo
+* `cd` your way into the downloaded folder
+* Run this `conda create --name <env> --file requirements`
+
+Have fun :)
+
