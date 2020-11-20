@@ -61,3 +61,102 @@ Then, by instantiating the `dataset` object, we have the power to manipulate the
 As a developer, you may want to explore SDK functionality in a Command-Line Interface where you can try out commands in the interactive prompt. By using IPython in the Azure Cloud Shell, you can easily experiment with different SDK features. An approach that some developers use is to play with a feature initially in the Cloud Shell, and then later implement it in a Jupyter Notebook.
 
 The first time you use the Cloud Shell in your Azure account, you'll need to enable it. To do so, click on the shell icon:
+
+* **Create a virtual environment and install IPyton** Once you have the Cloud Shell running, the first thing you'll want to do is create a virtual environment for the SDK. You can do that using `venv` as follows:
+```bash
+python -m venv ~/.azure-ml-sdk
+```
+Then activate the virtual environment and install IPython
+```bash
+source ~/.azure-ml-sdk/bin/activate && pip install ipython
+```
+* **Installing and using the SDK with a Makefile** One of our main goals in using the Azure ML SDK is to add automation to our Python projects. One way we can do that is to use the SDK is to create an installation step with a [Makefile](https://en.wikipedia.org/wiki/Makefile) and incorporate the Azure ML SDK with your Continuous Integration workflow. A _Makefile_ can include a command to install and upgrade packages in a `requirements.txt` file. Here's an example in Azure Cloud Shell:
+```bash
+(.azure-ml-sdk) udacity@Azure:~/azure-ml-sdk$ cat Makefile
+install:
+        pip install --upgrade pip &&\
+        pip install --upgrade -r requirements.txt
+```
+The `requirements.txt` file will look like this:
+```bash
+(.azure-ml-sdk) udacity@Azure:~/azure-ml-sdk$ cat requirements.txt
+ipython
+azureml-sdk
+```
+And then, to install, you can simply run `make install` in the shell.
+
+### Creating a Pipeline with the SDK
+
+Below is a code example for creating a pipeline with the SDK 
+
+* **Data Preparation**
+
+```python
+ws = Workspace.from_config() 
+blob_store = Datastore(ws, "workspaceblobstore")
+compute_target = ws.compute_targets["STANDARD_NC6"]
+experiment = Experiment(ws, 'MyExperiment') 
+
+input_data = Dataset.File.from_files(DataPath(datastore, '20newsgroups/20news.pkl'))
+```
+* **Training Configuration**
+
+```python
+output_data = PipelineData("output_data", datastore=blob_store)
+
+input_named = input_data.as_named_input('input')
+
+steps = [ PythonScriptStep(
+    script_name="train.py",
+    arguments=["--input", input_named.as_download(),
+        "--output", output_data],
+    inputs=[input_data],
+    outputs=[output_data],
+    compute_target=compute_target,
+    source_directory="myfolder"
+) ]
+
+pipeline = Pipeline(workspace=ws, steps=steps)
+```
+
+* **Training Validation**
+
+```python
+pipeline_run = experiment.submit(pipeline)
+pipeline_run.wait_for_completion()
+```
+
+### Managing Experiments with the SDK
+
+Managing our experiments with the SDK, allows ys to access this same data—but in a way that gives us greater control and increased functionality. This involves two main tasks: **Listing past experiments** and **submitting new experiments.**
+
+1. **Listing Past Experiments**
+
+To do this, we need to pass in a workspace object, and then list the collection of trials. This will give us data very similar to the list we've accessed previously using the Designer. Here's the example code we looked at:
+```python
+from azureml.core.experiment import Experiment
+
+# First, we pass in the workspace object `ws` to the `list` method
+# and it returns a Python list of `Experiment` objects.  
+list_experiments = Experiment.list(ws)
+
+# If we print the contents of the variable,
+# we can see the list of all the experiments
+# that have been run in that workspace.
+print(list_experiments)
+[Experiment(Name: dataset_profile,
+ Workspace: Azure-ML-Workspace), Experiment(Name: binary-classification,
+ Workspace: Azure-ML-Workspace), Experiment(Name: regression,
+ Workspace: Azure-ML-Workspace), Experiment(Name: sfautoml]
+```
+
+2. **Submitting New Experiments**
+
+To submit a new experiment (such as if we wanted to try a different model type or a different algorithm), we would again pass in a workspace object and then submit the experiment. Here's the example code:
+```python
+from azureml.core.experiment import Experiment
+
+experiment = Experiment(ws, "automl_test_experiment")
+run = experiment.submit(config=automl_config, show_output=True)
+```
+
